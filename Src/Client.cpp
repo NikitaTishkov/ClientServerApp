@@ -1,89 +1,81 @@
-#include <iostream>
-#include <string>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include "../Inc/Client.h"
 
 using std::cout;
 using std::endl;
 
-int main()
+CClient::CClient(int iIDNew = 1, int iBufSizeNew = BUF_SIZE, int iPortNew = PORT)
 {
-    int iClientFd, iServerFd;
-    int iPort = 12321;
-    bool bIsExit = false;
-    int iBufSize = 1024;
-    char a_chBuffer[iBufSize];
-    const char *chIp = "127.0.0.1";
+    m_iID = iIDNew;
+    m_iBufSize = iBufSizeNew;
+    const char *iIP = IP;
+    m_siServerAddr.sin_family = AF_INET;
+    m_siServerAddr.sin_port = htons(iPortNew);
+    Inet_pton(AF_INET, iIP, &m_siServerAddr.sin_addr);
+    m_slSocketSize = sizeof(m_siServerAddr);
+    cout << "Client setuped" << endl;
+}
 
-    struct sockaddr_in siServerAddr;
-    socklen_t slSocketSize;
+CClient::~CClient()
+{
 
-    iClientFd = socket(AF_INET, SOCK_STREAM, 0);
+}
 
-    if(iClientFd < 0)
-    {
-        cout << "Error creating socket..." << endl;
-        exit(1);
-    }
+void CClient::SetID(int iIDNew)
+{
+    m_iID = iIDNew;
+}
 
-    cout << "Client Socket created" << endl;
+void CClient::SetClientFd(int iFdNew)
+{
+    m_iClientFd = iFdNew;
+}
 
-    siServerAddr.sin_family = AF_INET;
-    siServerAddr.sin_port = htons(iPort);
-    inet_pton(AF_INET, chIp, &siServerAddr.sin_addr);
-    // Connecting socket server
-    slSocketSize = sizeof(siServerAddr);
-    if (connect(iClientFd, (struct sockaddr*)&siServerAddr, slSocketSize) == -1)
-    {
-        cout << "Connection to the server failed" << endl;
-        //exit(1);
-    }
-    
+void CClient::SetServerFd(int iFdNew)
+{
+    m_iServerFd = iFdNew;
+}
 
-    recv(iClientFd, a_chBuffer, iBufSize, 0);
-    cout << "Connection confirmed" << endl;
+void CClient::SetBufSize(int iSizeNew)
+{
+    m_iBufSize = iSizeNew;
+}
 
-    cout << "Enter # to end the connection" << endl;
+void CClient::SetSocketAddr( short SinFamilyNew, 
+                    unsigned short SinPortNew, 
+                    struct in_addr SinAddrNew )
+{
+    m_siServerAddr.sin_addr = SinAddrNew;
+    m_siServerAddr.sin_family = SinFamilyNew;
+    m_siServerAddr.sin_port = SinPortNew;
+}
 
-    do
-    {
-        cout << "Client: ";
-        do 
-        {
-            std::cin >> a_chBuffer;
-            send(iClientFd, a_chBuffer, iBufSize, 0);
-            if (*a_chBuffer == '#')
-            {
-                send(iClientFd, a_chBuffer, iBufSize, 0);
-                *a_chBuffer = '*';
-                bIsExit = true;
-            }
-        } while (*a_chBuffer != 42);
+void CClient::SetSocketSize(socklen_t slSizeNew)
+{
+    m_slSocketSize = slSizeNew;
+}
 
-        cout << "Server: ";
-
-        do
-        {
-            recv(iClientFd, a_chBuffer, iBufSize, 0);
-            cout << a_chBuffer << " ";
-            if (*a_chBuffer == '#')
-            {
-                *a_chBuffer = '*';
-                bIsExit = true;
-            }
-        } while (*a_chBuffer != 42);
-
-        cout << endl;
-    } while (!bIsExit);
-
-    cout << "Connection terminated..." << endl;
-    cout << "Goodbye" << endl;
-
-    close(iClientFd);
-
-    return 0;
+    /* Getters */
+int CClient::GetID() const
+{
+    return m_iID;
+}
+int CClient::GetClientFd() const
+{
+    return m_iClientFd;
+}
+int CClient::GetServerFd() const
+{
+    return m_iServerFd;
+}
+int CClient::GetBufSize() const
+{
+    return m_iBufSize;
+}
+struct sockaddr_in CClient::GetSocketAddr() const 
+{
+    return m_siServerAddr;
+}
+socklen_t CClient::GetSocketSize() const
+{
+    return m_slSocketSize;
 }
