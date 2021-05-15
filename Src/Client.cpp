@@ -17,7 +17,7 @@ CClient::CClient(int iIDNew = 1, int iBufSizeNew = BUF_SIZE, int iPortNew = PORT
 
 CClient::~CClient()
 {
-
+    cout << "Client #" << m_iID << "shuts downs!" << endl;
 }
 
 void CClient::SetID(int iIDNew)
@@ -71,11 +71,34 @@ int CClient::GetBufSize() const
 {
     return m_iBufSize;
 }
-struct sockaddr_in CClient::GetSocketAddr() const 
+struct sockaddr_in CClient::GetServerAddr() const 
 {
     return m_siServerAddr;
 }
+
+struct sockaddr* CClient::GetServerPtrAddr() const
+{
+    return (struct sockaddr*)&m_siServerAddr;
+}
+
 socklen_t CClient::GetSocketSize() const
 {
     return m_slSocketSize;
+}
+
+void CClient::ConnectionInit()
+{
+    /* Creating socket */
+    m_iClientFd = Socket(AF_INET, SOCK_STREAM, 0);
+        
+    /* Cunnect current socket to the server */
+    Connect(m_iClientFd, GetServerPtrAddr(), m_slSocketSize);
+
+    recv(m_iClientFd, m_c_strBuffer, m_iBufSize, 0);
+    cout << "Connection confirmed and Server responses: " << m_c_strBuffer << endl;
+    if(strcmp("Connected", m_c_strBuffer) == 0)
+    {
+        struct MsgPack msgAuth = { 0 };
+        msgAuth.ClientID = GetID();
+    }
 }

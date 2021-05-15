@@ -1,122 +1,152 @@
-#include <iostream>
-#include <string>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <stdlib.h>
-#include <cstring>
-#include <unistd.h>
-
-#define MAX_SOCKET_NUM 1
+#include "../Inc/Server.h"
 
 using std::cout;
 using std::endl;
 
-int main()
+CServer::CServer(int iBufSizeNew = BUF_SIZE, 
+                 int iPortNew = PORT)
 {
-    int iClientFd, iServerFd;
-    int iPort = 12321;
-    bool bIsExit = false;
-    int iBufSize = 1024;
-    char a_chBuffer[iBufSize];
-
-    struct sockaddr_in siServerAddr;
-    socklen_t slSocketSize;
-
-    iClientFd = socket(AF_INET, SOCK_STREAM, 0);
-
-    if (iClientFd < 0)
+    m_siServerAddr.sin_family = AF_INET;
+    m_siServerAddr.sin_port = htons(PORT);
+    Inet_pton(AF_INET, IP, &m_siServerAddr.sin_addr);
+    m_slSocketSize = sizeof(m_siServerAddr);
+    m_aConnections = new int*[MAX_SOCKET_NUM];
+    for(int i = 0; i < MAX_SOCKET_NUM; i++)
     {
-        cout << "Establishing connection error!" << endl;
-        exit(1);
+        m_aConnections[i] = new int[2];
     }
-
-    cout << "Server Socket connection created..." << endl;
-
-    siServerAddr.sin_family = AF_INET;
-    siServerAddr.sin_port = htons(iPort);
-    inet_pton(AF_INET, "127.0.0.1", &siServerAddr.sin_addr);
-
-
-    if (bind(iClientFd, (struct sockaddr*)&siServerAddr, sizeof(siServerAddr)) < 0)
-    {
-        cout << "Error binding socket..." << endl;
-        exit(1);
-    }
-
-    slSocketSize = sizeof(siServerAddr);
-    cout << "Looking for clients..." << endl;
-
-    //listening 
-
-    listen(iClientFd, MAX_SOCKET_NUM);
-
-    //accept client
-
-    iServerFd = accept(iClientFd, (struct sockaddr*)&siServerAddr, &slSocketSize);
-
-    if (iServerFd < 0)
-    {
-        cout << "Error on accepting client..." << endl;
-        exit(1);
-    }
-
-    while (iServerFd > 0)
-    {
-        strcpy(a_chBuffer, "Server connected...\n");
-        send(iServerFd, a_chBuffer, iBufSize, 0);
-
-        cout << "Connected with client..." << endl;
-        cout << "Enter # to end the connection" << endl;
-
-        cout << "Client:" << endl;
-        
-        do 
-        {
-            recv(iServerFd, a_chBuffer, iBufSize, 0);
-            cout << "Buffer" << " ";
-
-            if (*a_chBuffer == '#')
-            {
-                *a_chBuffer = '*';
-                bIsExit = true;
-            }
-        } while (*a_chBuffer != '*');
-
-        do 
-        {
-            cout << "\nServer: ";
-            do
-            {
-                std::cin >> a_chBuffer;
-                send(iServerFd, a_chBuffer, iBufSize, 0);
-                if (*a_chBuffer == '#')
-                {
-                    send(iServerFd, a_chBuffer, iBufSize, 0);
-                    *a_chBuffer = '*';
-                    bIsExit = true;
-                }
-            } while (*a_chBuffer != '*');
-
-            cout << "Client: ";
-            do
-            {
-                recv(iServerFd, a_chBuffer, iBufSize, 0);
-                cout << a_chBuffer << " ";
-                if (*a_chBuffer == '#')
-                {
-                    *a_chBuffer == '*';
-                }
-            } while (*a_chBuffer != '*');
-        } while (!bIsExit);
-
-        cout << "Connection terminated..." << endl;
-        cout << "Goodbye..." << endl;
-        bIsExit = false;
-        exit(1);
-    }
-
-    close(iClientFd);
-    return 0;
 }
+
+void CServer::SetServerFd(int iFdNew)
+{
+    m_iServerFd = iFdNew;
+}
+
+void CServer::SetBufSize(int iSizeNew)
+{
+    m_iBufSize = iSizeNew;
+}
+
+void CServer::SetClientsNum(int iNumNew)
+{
+    m_iClientsNum = iNumNew;
+}
+
+void CServer::SetSocketAddr( short SinFamilyNew,
+                             unsigned short SinPortNew,
+                             struct in_addr SinAddrNew)
+{
+    m_siServerAddr.sin_addr = SinAddrNew;
+    m_siServerAddr.sin_family = SinFamilyNew;
+    m_siServerAddr.sin_port = SinPortNew;
+}
+
+void CServer::SetSocketSize(socklen_t slSizeNew)
+{
+    m_slSocketSize = slSizeNew;
+}
+
+void CServer::SetHighestSocket(int iNewFd)
+{
+    m_HighestSocketFd = iNewFd;
+}
+
+int CServer::GetServerFd() const
+{
+    return m_iServerFd;
+}
+
+struct sockaddr_in CServer::GetServerAddr() const 
+{
+    return m_siServerAddr;
+}
+
+int CServer::GetBufSize() const
+{
+    return m_iBufSize;
+}
+int CServer::GetClientsNum() const    
+{
+    return m_iClientsNum;
+}
+
+struct sockaddr* CServer::GetServerPtrAddr() const
+{
+    return (struct sockaddr*)&m_siServerAddr;
+}
+
+socklen_t CServer::GetSocketSize() const
+{
+    return m_slSocketSize;
+}
+
+int CServer::GetHighestSocket() const
+{
+    return m_HighestSocketFd;
+}
+
+void CServer::ServerInit()
+{
+    m_iServerFd = Socket(AF_INET, SOCK_STREAM, 0);
+    SetHighestSocket(m_iServerFd);
+    /* Binding server addr to it`s socket */
+    Bind(m_iServerFd, (struct sockaddr*)&m_siServerAddr, m_slSocketSize);
+    /* Listening connection requests */
+    Listen(m_iServerFd, MAX_SOCKET_NUM);
+
+}
+
+void CServer::HandleNewConnection()
+{
+    int i;
+    bool bIsConnectionSet = false;
+    int iConnectionFd = Accept(m_iServerFd, 0, 0);
+    for(i = 0; i < MAX_SOCKET_NUM && !bIsConnectionSet; i++)
+    {
+        if(m_aConnections[i][0] == 0)
+        {
+            m_aConnections[i][0] = iConnectionFd;
+            bIsConnectionSet = true;
+        }
+    }
+    if(!bIsConnectionSet)
+    {
+        const char *sResponse = "Server is too busy!\n";
+        send(iConnectionFd, sResponse, strlen(sResponse), 0);
+        close(iConnectionFd);
+    }
+    else
+    {
+        /* Client authorization */
+        send(iConnectionFd, "Connected", 9, 0);
+        struct MsgPack msgResponse;
+        recv(iConnectionFd, &msgResponse, sizeof(msgResponse), 0);
+        m_aConnections[i][1] = msgResponse.ClientID;
+        cout << "Client #ID: " << m_aConnections[i][1] << " authorized" << endl;
+        if(iConnectionFd > GetHighestSocket())
+        {
+            SetHighestSocket(iConnectionFd);
+        }
+    }
+}
+
+void CServer::SetSelectFds()
+{
+    /* Clear file descriptors array */
+    FD_ZERO(&m_ReadableSockets);
+    FD_ZERO(&m_WritableSockets);
+
+    /* Add Server file descriptor */
+    FD_SET(m_iServerFd, &m_ReadableSockets);
+    FD_SET(m_iServerFd, &m_WritableSockets);
+
+    for(int i = 0; i < MAX_SOCKET_NUM; i++)
+    {
+        if(m_aConnections[i] != 0)
+        {
+            FD_SET(m_aConnections[i][0], &m_ReadableSockets);
+            FD_SET(m_aConnections[i][0], &m_WritableSockets);
+        }
+    }
+}
+

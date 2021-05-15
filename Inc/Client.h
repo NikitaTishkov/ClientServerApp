@@ -2,7 +2,7 @@
 #define CLIENT_H
 
 #include <iostream>
-#include <string>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -15,6 +15,14 @@
 #define IP "127.0.0.1"
 #define BUF_SIZE 1024
 #define PORT 12321
+
+struct MsgPack 
+{
+    int DestinationID;
+    int ClientID;
+    bool IsWchar;
+    const void* Data;
+};
 
 class CClient
 {
@@ -33,7 +41,13 @@ private:
     socklen_t m_slSocketSize;
     
 public:
-    /* Constructors */
+    
+    /** Constructor
+     * 
+     * Set ups client prefernces before creating socket and connecting 
+     * to the server
+     * 
+     */ 
     CClient(int iIDNew = 1, 
             int iBufSizeNew = BUF_SIZE, 
             int iPortNew = PORT);
@@ -48,7 +62,7 @@ public:
 
     void SetSocketAddr( short SinFamilyNew, 
                         unsigned short SinPortNew, 
-                        struct in_addr SinZeroNew );
+                        struct in_addr SinAddrNew );
 
     void SetSocketSize(socklen_t slSizeNew);
 
@@ -57,9 +71,14 @@ public:
     int GetClientFd() const;
     int GetServerFd() const;
     int GetBufSize() const;
-    struct sockaddr_in GetSocketAddr() const;
+    struct sockaddr_in GetServerAddr() const;
+    struct sockaddr* GetServerPtrAddr() const; 
     socklen_t GetSocketSize() const;
 
+    /* Client functionalities */
+    void ConnectionInit();
+    void SendString();
+    void SendWString();
 };
 
 #endif
