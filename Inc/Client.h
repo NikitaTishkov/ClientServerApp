@@ -16,14 +16,6 @@
 #define BUF_SIZE 1024
 #define PORT 12321
 
-struct MsgPack 
-{
-    int DestinationID;
-    int ClientID;
-    bool IsWchar;
-    const void* Data;
-};
-
 class CClient
 {
 private:
@@ -42,15 +34,15 @@ private:
     
 public:
     
-    /** Constructor
+    /** Constructors
      * 
      * Set ups client prefernces before creating socket and connecting 
      * to the server
      * 
      */ 
-    CClient(int iIDNew = 1, 
-            int iBufSizeNew = BUF_SIZE, 
-            int iPortNew = PORT);
+    CClient();
+    CClient(int iIDNew);
+    CClient(int iIDNew, int iBufSizeNew, int iPortNew);
 
     ~CClient();
 
@@ -77,8 +69,10 @@ public:
 
     /* Client functionalities */
     void ConnectionInit();
-    void SendString();
-    void SendWString();
+    void SendString(int DestID, const char* c_strMessage);
+    void SendWString(int DestID, const wchar_t* wc_strMessage);
+    void RecvMessage();
+    void ClientCycle();
 };
 
 #endif

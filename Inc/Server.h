@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/select.h>
+#include <fcntl.h>
 
 #include "ErrWrap.h"
 
@@ -18,14 +19,6 @@
 #define BUF_SIZE 1024
 #define PORT 12321
 #define MAX_SOCKET_NUM 3
-
-struct MsgPack 
-{
-    int DestinationID;
-    int ClientID;
-    bool IsWchar;
-    const void* Data;
-};
 
 class CServer
 {
@@ -59,8 +52,8 @@ public:
      * to the server
      * 
      */ 
-    CServer( int iBufSizeNew = BUF_SIZE, 
-             int iPortNew = PORT);
+    CServer();
+    CServer(int iBufSizeNew, int iPortNew);
 
     ~CServer();
 
@@ -89,7 +82,12 @@ public:
     void ServerInit();
     void HandleNewConnection();
     void SetSelectFds();
-
+    void ReadFromClients();
+    void MessageTranfer(int iSourceSocketIndex);
+    void ServerCycle();
+    void SetNonBlocking(int iSockFd);
+    void SendString(int iDestFd, int iSrcID, int iDestID, const char* c_strMessage);
+    void SendWString(int iDestFd, int iSrcID, int iDestID, const wchar_t* wc_strMessage);
 };
 
 #endif

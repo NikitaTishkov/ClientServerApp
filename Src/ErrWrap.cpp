@@ -45,6 +45,7 @@ void Bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 
 void Listen(int sockfd, int backlog)
 {
+    cout << "Listening..." << endl;
     int res = listen(sockfd, backlog);
     if(res == -1)
     {
