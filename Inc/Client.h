@@ -9,7 +9,8 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <unistd.h>
-
+#include <wchar.h>
+#include <iconv.h>
 #include "ErrWrap.h"
 
 #define IP "127.0.0.1"

@@ -9,27 +9,17 @@ CServer::CServer()
     m_siServerAddr.sin_family = AF_INET;
     m_siServerAddr.sin_port = htons(PORT);
     Inet_pton(AF_INET, IP, &m_siServerAddr.sin_addr);
-    m_iBufSize = BUF_SIZE;
     m_slSocketSize = sizeof(m_siServerAddr);
-    m_aConnections = new int*[MAX_SOCKET_NUM];
-    for(int i = 0; i < MAX_SOCKET_NUM; i++)
-    {
-        m_aConnections[i] = new int[2];
-    }
+    pthread_mutex_init(&m_ConnectionsTableMutex, 0);
 }
 
-CServer::CServer(int iBufSizeNew, int iPortNew)
+CServer::CServer(int iPortNew)
 {
     m_siServerAddr.sin_family = AF_INET;
     m_siServerAddr.sin_port = htons(iPortNew);
     Inet_pton(AF_INET, IP, &m_siServerAddr.sin_addr);
-    m_iBufSize = iBufSizeNew;
     m_slSocketSize = sizeof(m_siServerAddr);
-    m_aConnections = new int*[MAX_SOCKET_NUM];
-    for(int i = 0; i < MAX_SOCKET_NUM; i++)
-    {
-        m_aConnections[i] = new int[2];
-    }
+    pthread_mutex_init(&m_ConnectionsTableMutex, 0);
 }
 
 CServer::~CServer()
@@ -40,11 +30,6 @@ CServer::~CServer()
 void CServer::SetServerFd(int iFdNew)
 {
     m_iServerFd = iFdNew;
-}
-
-void CServer::SetBufSize(int iSizeNew)
-{
-    m_iBufSize = iSizeNew;
 }
 
 void CServer::SetClientsNum(int iNumNew)
@@ -66,11 +51,6 @@ void CServer::SetSocketSize(socklen_t slSizeNew)
     m_slSocketSize = slSizeNew;
 }
 
-void CServer::SetHighestSocket(int iNewFd)
-{
-    m_HighestSocketFd = iNewFd;
-}
-
 int CServer::GetServerFd() const
 {
     return m_iServerFd;
@@ -81,10 +61,6 @@ struct sockaddr_in CServer::GetServerAddr() const
     return m_siServerAddr;
 }
 
-int CServer::GetBufSize() const
-{
-    return m_iBufSize;
-}
 int CServer::GetClientsNum() const    
 {
     return m_iClientsNum;
@@ -98,23 +74,6 @@ struct sockaddr* CServer::GetServerPtrAddr() const
 socklen_t CServer::GetSocketSize() const
 {
     return m_slSocketSize;
-}
-
-int CServer::GetHighestSocket() const
-{
-    return m_HighestSocketFd;
-}
-
-void CServer::ServerInit()
-{
-    m_iServerFd = Socket(AF_INET, SOCK_STREAM, 0);
-    
-    SetHighestSocket(m_iServerFd);
-    /* Binding server addr to it`s socket */
-    Bind(m_iServerFd, (struct sockaddr*)&m_siServerAddr, m_slSocketSize);
-    /* Listening connection requests */
-    Listen(m_iServerFd, MAX_SOCKET_NUM);
-    
 }
 
 void CServer::SetNonBlocking(int iSockFd)
@@ -134,214 +93,128 @@ void CServer::SetNonBlocking(int iSockFd)
 	return;
 }
 
+void CServer::ServerInit()
+{
+    m_iServerFd = Socket(AF_INET, SOCK_STREAM, 0);
+    
+    /* Binding server addr to it`s socket */
+    Bind(m_iServerFd, (struct sockaddr*)&m_siServerAddr, m_slSocketSize);
+    /* Listening connection requests */
+    Listen(m_iServerFd, MAX_SOCKET_NUM);
+}
+
 void CServer::SendString(int iDestFd, int iSrcID, int iDestID, const char* c_strMessage)
 {
+    cout << "Sending..." << endl;
     /* Send Source ID */
-    send(iDestFd, &iSrcID, sizeof(int), 0);
+    cout << send(iDestFd, &iSrcID, sizeof(int), 0) << endl;
     /* Send Destination */
-    send(iDestFd, &iDestID, sizeof(int), 0);
+    cout << send(iDestFd, &iDestID, sizeof(int), 0) << endl;
     /* Specify WCHAR or CHAR message */
     bool IsWchar = false;
-    send(iDestFd, &IsWchar, sizeof(bool), 0);
+    cout << send(iDestFd, &IsWchar, sizeof(bool), 0) << endl;
     /* Send Data */
-    send(iDestFd, c_strMessage, BUF_SIZE, 0);
+    cout << c_strMessage << endl;
+    cout << send(iDestFd, c_strMessage, BUF_SIZE, 0) << endl;
 }
 
 void CServer::SendWString(int iDestFd, int iSrcID, int iDestID, const wchar_t* wc_strMessage)
 {
+    cout << "WSending..." << endl;
     /* Send Source ID */
-    send(iDestID, &iSrcID, sizeof(int), 0);
+    cout << send(iDestID, &iSrcID, sizeof(int), 0) << endl;
     /* Send Destination */
-    send(iDestID, &iDestID, sizeof(int), 0);
+    cout << send(iDestID, &iDestID, sizeof(int), 0) << endl;
     /* Specify WCHAR or CHAR message */
     bool IsWchar = true;
-    send(iDestID, &IsWchar, sizeof(bool), 0);
+    cout << send(iDestID, &IsWchar, sizeof(bool), 0) << endl;
     /* Send Data */
-    send(iDestID, wc_strMessage, BUF_SIZE, 0);
+    std::wcout << wc_strMessage << endl;
+    cout << send(iDestID, wc_strMessage, BUF_SIZE, 0) << endl;
 }
 
-void CServer::HandleNewConnection()
+
+int CServer::HandleNewConnection()
 {
-    int i;
-    bool bIsConnectionSet = false;
-    int iConnectionFd;
-    while(iConnectionFd < 0)
+    int iNewClientFd = accept(m_iServerFd, 0, 0);
+    if(iNewClientFd < 0)
     {
-        iConnectionFd = accept(m_iServerFd, 0, 0);
+        return -1;
     }
-    for(i = 0; i < MAX_SOCKET_NUM && !bIsConnectionSet; i++)
-    {
-        if(m_aConnections[i][0] == 0)
-        {
-            m_aConnections[i][0] = iConnectionFd;
-            bIsConnectionSet = true;
-        }
-    }
-    if(!bIsConnectionSet)
-    {
-        const char *sResponse = "Server is too busy!\n";
-        send(iConnectionFd, sResponse, BUF_SIZE, 0);
-        close(iConnectionFd);
-    }
-    else
-    {
-        /* Client authorization */
-        char *c_strConnResponse = new char[BUF_SIZE];
-        c_strConnResponse = "Connected";
-        send(iConnectionFd, c_strConnResponse, BUF_SIZE, 0);
-        int iClientAuthID;
-        recv(iConnectionFd, &iClientAuthID, sizeof(int), 0);
-        cout << "ID: " << iClientAuthID << endl;
-        if(iClientAuthID == 0)
-        {
-            cerr << "Authorization error" << endl;
-            exit(EXIT_FAILURE);
-        }
-        m_aConnections[i][1] = iClientAuthID;
-        cout << "Client #ID: " << m_aConnections[i][1] << " authorized" << endl;
-        if(iConnectionFd > GetHighestSocket())
-        {
-            SetHighestSocket(iConnectionFd);
-        }
-        SetNonBlocking(m_iServerFd);
-        SetNonBlocking(iConnectionFd);
-    }
+    pthread_t *NewClientThread = new pthread_t;
+    int *ptrArgs = new int;
+    *ptrArgs = iNewClientFd;
+    pthread_create(NewClientThread, 0, &CServer::ServerThreadWorkCycle_PassHelper, (void*) ptrArgs);
+    m_aServerRoutines.push_back(NewClientThread);
+    return 0;
 }
 
-void CServer::SetSelectFds()
+void* CServer::ServerThreadWorkCycle(void *iNewSocket)
 {
-    /* Clear file descriptors array */
-    //cout << "Try to zero" << endl;
-    FD_ZERO(&m_ReadableSockets);
-    FD_ZERO(&m_WritableSockets);
-    //cout << "Zero Fdset" << endl;
-    /* Add Server file descriptor */
-    FD_SET(m_iServerFd, &m_ReadableSockets);
-    FD_SET(m_iServerFd, &m_WritableSockets);
-    //cout << "Added server fd to list" << endl;
-    for(int i = 0; i < MAX_SOCKET_NUM; i++)
+    /* Client authorization */
+    int iClientFd = *((int *) iNewSocket);
+    cout << "Client auth" << endl;
+    //SetNonBlocking(iClientFd);
+    const char* c_strConfirm = "Connected";
+    send(iClientFd, c_strConfirm, BUF_SIZE, 0);
+    //pthread_mutex_lock(&m_ConnectionsTableMutex);
+    int iClientID;
+    
+    cout << recv(iClientFd, &iClientID, sizeof(int), 0) << endl;
+    cout << "Receiving ID:" << iClientID << endl;
+    m_aConnections.insert(std::make_pair(iClientID, iClientFd));
+    
+    //pthread_mutex_unlock(&m_ConnectionsTableMutex);
+    cout << "Client #ID" << iClientID << " authorized" << endl;
+    /* End of authorization */
+    while(1)
     {
-        if(m_aConnections[i] != 0)
+
+        int iSrcID; 
+        int iDestID;
+        int iSourceID;
+        bool bIsWchar;
+        char c_strBuffer[BUF_SIZE];
+        wchar_t wc_strBuffer[BUF_SIZE];
+        /* Receiving source ID */
+        //cout << "Starts recv" << endl;
+        //cout << recv(iClientID, &iSrcID, sizeof(int), 0) << endl;
+        /* Comment */
+        //cout << "Get it" << errno << endl;
+        //cout << recv(iClientID, &iSrcID, sizeof(int), 0) << endl;
+        /* Receiving destination ID */
+        cout << recv(iClientFd, &iSourceID, sizeof(int), 0) << endl;
+        cout << recv(iClientFd, &iDestID, sizeof(int), 0) << endl;
+        iSrcID = iSourceID;
+        /* Receiving Is WCHAR flag */
+        cout << recv(iClientFd, &bIsWchar, sizeof(bool), 0) << endl;
+        int iDestinationFd = m_aConnections[iDestID];
+        /* Receiving text and sending message */
+        if(bIsWchar)
         {
-            FD_SET(m_aConnections[i][0], &m_ReadableSockets);
-            FD_SET(m_aConnections[i][0], &m_WritableSockets);
-        }
-    }
-}
-
-void CServer::ReadFromClients()
-{
-    /* If Server fd is ready - handling new connaction */
-    if(FD_ISSET(m_iServerFd, &m_ReadableSockets))
-    {
-        //HandleNewConnection();
-    }
-
-    for(int i = 0; i < MAX_SOCKET_NUM; i++)
-    {
-        if(FD_ISSET(m_aConnections[i][0], &m_ReadableSockets))
-        {
-            MessageTranfer(i);
-        }
-    }
-}
-
-void CServer::MessageTranfer(int iSourceSocketIndex)
-{
-    int iDestID;
-    int iSrcID;
-    bool bIsWchar;
-    const char *c_strBuffer;
-    const wchar_t *wc_strBuffer;
-    cout << "reading from Client #ID:" << m_aConnections[iSourceSocketIndex][1] << endl;
-    /* Receiving Data */
-    /* Recv. Source ID */
-    recv(m_aConnections[iSourceSocketIndex][0], &iSrcID, sizeof(int), 0);
-    /* Recv. Destination ID */
-    recv(m_aConnections[iSourceSocketIndex][0], &iDestID, sizeof(int), 0);
-    /* Recv. Is WCHAR flag */
-    recv(m_aConnections[iSourceSocketIndex][0], &bIsWchar, sizeof(bool), 0);
-    /* Recv. text */
-    if(bIsWchar)
-    {
-        recv(m_aConnections[iSourceSocketIndex][0], &c_strBuffer, BUF_SIZE, 0);
-    }
-    else
-    {
-        recv(m_aConnections[iSourceSocketIndex][0], &wc_strBuffer, BUF_SIZE, 0);
-    }
-    bool bIsSended = false;
-    for(int i = 0; i < MAX_SOCKET_NUM && !bIsSended; i++)
-    {
-        if(m_aConnections[i][1] == iDestID)
-        {
-            if(!FD_ISSET(m_aConnections[i][0], &m_WritableSockets))
-            {
-                cerr << "Destination is not ready" << endl;
-            }
-            else
-            {
-                if(bIsWchar)
-                {
-                    SendWString(m_aConnections[i][0], iSrcID, iDestID, wc_strBuffer);
-                }
-                else
-                {
-                    SendString(m_aConnections[i][0], iSrcID, iDestID, c_strBuffer);
-                }
-                bIsSended = true;
-            }   
-        }
-    }
-
-    if(!bIsSended)
-    {
-        /*TODO: Error Response*/
-        std::cerr << "There is no client with #ID" << iDestID << endl;   
-        const char* c_strFoundErr = "There is no client with such ID\n";
-        //send(m_aConnections[iSourceSocketIndex][0], c_strFoundErr, strlen(c_strFoundErr), 0);
-    }
-}
-
-void CServer::ServerCycle()
-{
-    int iSelectStat;
-    cout << "Server cycle starts..." << endl;
-    while (1)
-    {
-        //cout << "Server in Cycle" << endl;
-        SetSelectFds();
-        //cout << "SelectFds setted up" << endl;
-        iSelectStat = select(GetHighestSocket(),
-                             &m_ReadableSockets,
-                             &m_WritableSockets,
-                             0,
-                             0);
-
-        if(iSelectStat < 0)
-        {
-            cerr << "Error in using select()" << endl;
-            exit(EXIT_FAILURE);
-        }
-        else if(iSelectStat = 0)
-        {
-            /* All Client are busy */
+            cout << recv(iClientFd, &wc_strBuffer, BUF_SIZE, 0) << endl;
+            SendWString(iDestinationFd, iSourceID, iDestID, wc_strBuffer);
         }
         else
         {
-            ReadFromClients();
+            cout << recv(iClientFd, &c_strBuffer, BUF_SIZE, 0) << endl;
+            SendString(iDestinationFd, iSourceID, iDestID, c_strBuffer);
         }
-
+        cout << "Transfer message from #ID" << iSourceID << " to #ID"
+            << iDestID << endl;
     }
-    
 }
 
 int main()
 {
     CServer my_server;
     my_server.ServerInit();
-    my_server.HandleNewConnection();
-    my_server.HandleNewConnection();
-    my_server.ServerCycle();
-    return 0;
+    while(1)
+    {
+        if(!my_server.HandleNewConnection())
+        {
+            cout << "New client connected!" << endl;
+        }
+    }
+    
 }

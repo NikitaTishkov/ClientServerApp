@@ -120,13 +120,13 @@ void CClient::ConnectionInit()
     /* Cunnect current socket to the server */
     Connect(m_iClientFd, GetServerPtrAddr(), m_slSocketSize);
     m_c_strBuffer = new char[BUF_SIZE];
-    cout << recv(m_iClientFd, m_c_strBuffer, m_iBufSize, 0) << endl; 
+    cout << recv(m_iClientFd, m_c_strBuffer, BUF_SIZE, 0) << endl; 
     cout << "Connection confirmed and Server responses: " << m_c_strBuffer << endl;
     if(strcmp("Connected", m_c_strBuffer) == 0)
     {
         /* Authorization */
         /* Sending to the server ID of current client */
-        send(m_iClientFd, &m_iID, sizeof(int), 0);
+        cout << send(m_iClientFd, &m_iID, sizeof(int), 0) << endl;
     }
 }
 
@@ -152,9 +152,11 @@ void CClient::ClientCycle()
             if(chIsWCHAR == 'Y' || chIsWCHAR == 'y')
             {
                 const wchar_t* wstrMsg;
+                std::wstring wstrConv;
                 cout << "Set message text: ";
-                std::wcin >> (wchar_t*)wstrMsg;
+                std::wcin >> wstrConv;
                 cout << endl;
+                wstrMsg = wcsdup(wstrConv.c_str());
                 SendWString(DestID, wstrMsg);
             }
             else if(chIsWCHAR == 'N' || chIsWCHAR == 'n')
@@ -185,27 +187,29 @@ void CClient::ClientCycle()
 void CClient::SendString(int DestID, const char* c_strMessage)
 {
     /* Send Source ID */
-    send(m_iClientFd, &m_iID, sizeof(int), 0);
+    cout << "Sending..." << endl;
+    cout << send(m_iClientFd, &m_iID, sizeof(int), 0) << endl;
     /* Send Destination */
-    send(m_iClientFd, &DestID, sizeof(int), 0);
+    cout << send(m_iClientFd, &DestID, sizeof(int), 0) << endl;
     /* Specify WCHAR or CHAR message */
     bool IsWchar = false;
-    send(m_iClientFd, &IsWchar, sizeof(bool), 0);
+    cout << send(m_iClientFd, &IsWchar, sizeof(bool), 0) << endl;
     /* Send Data */
-    send(m_iClientFd, c_strMessage, BUF_SIZE, 0);
+    cout << send(m_iClientFd, c_strMessage, BUF_SIZE, 0) << endl;
 }
 
 void CClient::SendWString(int DestID, const wchar_t* wc_strMessage)
 {
     /* Send Source ID */
-    send(m_iClientFd, &m_iID, sizeof(int), 0);
+    cout << "Sending..." << endl;
+    cout << send(m_iClientFd, &m_iID, sizeof(int), 0) << endl;
     /* Send Destination */
-    send(m_iClientFd, &DestID, sizeof(int), 0);
+    cout << send(m_iClientFd, &DestID, sizeof(int), 0) << endl;
     /* Specify WCHAR or CHAR message */
     bool IsWchar = true;
-    send(m_iClientFd, &IsWchar, sizeof(bool), 0);
+    cout << send(m_iClientFd, &IsWchar, sizeof(bool), 0) << endl;
     /* Send Data */
-    send(m_iClientFd, wc_strMessage, BUF_SIZE, 0);
+    cout << send(m_iClientFd, wc_strMessage, BUF_SIZE, 0) << endl;
 }
 
 void CClient::RecvMessage()
@@ -213,24 +217,24 @@ void CClient::RecvMessage()
     int iSrcID;
     int iDestID;
     bool bISWchar;
-    const char *c_strBuffer;
-    const wchar_t *wc_strBuffer; 
+    char c_strBuffer[BUF_SIZE];
+    wchar_t wc_strBuffer[BUF_SIZE]; 
     /* Receiving data */
     /* Recv. Source ID */
-    recv(m_iClientFd, &iSrcID, sizeof(int), 0);
+    cout << recv(m_iClientFd, &iSrcID, sizeof(int), 0) << endl;
     /* Recv. Destination ID */
-    recv(m_iClientFd, &iDestID, sizeof(int), 0);
+    cout << recv(m_iClientFd, &iDestID, sizeof(int), 0) << endl;
     /* Recv. WCHAR flag */
-    recv(m_iClientFd, &bISWchar, sizeof(bool), 0);
+    cout << recv(m_iClientFd, &bISWchar, sizeof(bool), 0) << endl;
     /* Recveive and show text */
     if(bISWchar)
     {
-        recv(m_iClientFd, &wc_strBuffer, BUF_SIZE, 0);
+        cout << recv(m_iClientFd, &wc_strBuffer, BUF_SIZE, 0) << endl;
         std::wcout << L"#ID" << iSrcID << L" says" << wc_strBuffer << endl;
     }
     else
     {
-        recv(m_iClientFd, &c_strBuffer, BUF_SIZE, 0);
+        cout << recv(m_iClientFd, &c_strBuffer, BUF_SIZE, 0) << endl;
         std::cout << "#ID" << iSrcID << " says" << c_strBuffer << endl;
     }
     
