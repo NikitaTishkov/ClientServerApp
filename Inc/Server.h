@@ -22,15 +22,9 @@
 #define IP "127.0.0.1"
 #define BUF_SIZE 1024
 #define PORT 12321
+/* Number of sockets that can be connected at one time */
 #define MAX_SOCKET_NUM 3
-
-typedef void * (*THREADFUNCPTR)(void *);
-
-struct thread_args
-{
-    int SocketFd;
-};
-
+/* Connections Table */
 std::map<int, int> m_aConnections;
 
 class CServer
@@ -65,6 +59,9 @@ public:
 
     ~CServer();
 
+    /** Setters and getters are the atomic parts of code, so 
+     * that is not neccessary to cover them with tests
+     */
     /* Setters */
     void SetServerFd(int iFdNew);
     void SetClientsNum(int iNumNew);
@@ -110,15 +107,38 @@ public:
      */
     void* ServerThreadWorkCycle(void *iNewSocket);
 
-    /** 
-     * Function that sends Socket message data in the way that 
-     * other clients can receive it
+    /** Sending data in standart format (ASCII, ANSI or Utf-8)
+     * 
+     * Client sends Message data in specific order in which 
+     * server and other clients can read it
+     * 
+     * Send:
+     *  Sender ID;
+     *  Addressee ID;
+     *  Send WCHAR flag that helps other nodes understand how it should be received; (not fully implemented)
+     *  Send Data (char *)
      */
     void SendString(int iDestFd, int iSrcID, int iDestID, const char* c_strMessage);
 
-    
+    /** Sending data in UNICODE format
+     * 
+     * Client sends Message data in specific order in which 
+     * server and other clients can read it
+     * 
+     * Send:
+     *  Sender ID;
+     *  Addressee ID;
+     *  Send WCHAR flag that helps other nodes understand how it should be received; (not fully implemented)
+     *  Send Data (wchar_t *)
+     */
     void SendWString(int iDestFd, int iSrcID, int iDestID, const wchar_t* wc_strMessage);
-    void SetNonBlocking(int iSockFd);
+
+    /** 
+     * Helper static representation of th thread function
+     * 
+     * It used for parsing ServerThreadWorkCycle function to the
+     * pthread_create
+     */
     static void* ServerThreadWorkCycle_PassHelper(void *context)
     {
         return ((CServer*)context)->ServerThreadWorkCycle(context);

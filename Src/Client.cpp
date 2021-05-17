@@ -1,14 +1,26 @@
 #include "../Inc/Client.h"
 
+/** Client.cpp 
+ * Source code of clients app
+ * 
+ * Describes Client class and its functionalities
+ * 
+ * Client - application that gives an opportunity for user to 
+ * communicate with other clients using centrilized communication with server
+ */
+
+/* Taking streams for more comfortable usage */
 using std::cout;
 using std::endl;
 using std::cin;
 using std::cerr;
 
+/**
+ * Definition of constructors 
+ */
 CClient::CClient()
 {
     m_iID = 1;
-    m_iBufSize = BUF_SIZE;
     const char *iIP = IP;
     m_siServerAddr.sin_family = AF_INET;
     m_siServerAddr.sin_port = htons(PORT);
@@ -20,7 +32,6 @@ CClient::CClient()
 CClient::CClient(int iIDNew)
 {
     m_iID = iIDNew;
-    m_iBufSize = BUF_SIZE;
     const char *iIP = IP;
     m_siServerAddr.sin_family = AF_INET;
     m_siServerAddr.sin_port = htons(PORT);
@@ -29,10 +40,9 @@ CClient::CClient(int iIDNew)
     cout << "Client setuped" << endl;
 }
 
-CClient::CClient(int iIDNew, int iBufSizeNew, int iPortNew)
+CClient::CClient(int iIDNew, int iPortNew)
 {
     m_iID = iIDNew;
-    m_iBufSize = iBufSizeNew;
     const char *iIP = IP;
     m_siServerAddr.sin_family = AF_INET;
     m_siServerAddr.sin_port = htons(iPortNew);
@@ -41,11 +51,15 @@ CClient::CClient(int iIDNew, int iBufSizeNew, int iPortNew)
     cout << "Client setuped" << endl;
 }
 
+/** Destructor 
+ * Closing socket(That case apeared if Client cycle`s breaked)
+ */
 CClient::~CClient()
 {
     cout << "Client #" << m_iID << "shuts downs!" << endl;
+    close(m_iClientFd);
 }
-
+/* Definitions of Setters */
 void CClient::SetID(int iIDNew)
 {
     m_iID = iIDNew;
@@ -54,16 +68,6 @@ void CClient::SetID(int iIDNew)
 void CClient::SetClientFd(int iFdNew)
 {
     m_iClientFd = iFdNew;
-}
-
-void CClient::SetServerFd(int iFdNew)
-{
-    m_iServerFd = iFdNew;
-}
-
-void CClient::SetBufSize(int iSizeNew)
-{
-    m_iBufSize = iSizeNew;
 }
 
 void CClient::SetSocketAddr( short SinFamilyNew, 
@@ -80,7 +84,7 @@ void CClient::SetSocketSize(socklen_t slSizeNew)
     m_slSocketSize = slSizeNew;
 }
 
-    /* Getters */
+/* Definition of getters */
 int CClient::GetID() const
 {
     return m_iID;
@@ -89,14 +93,7 @@ int CClient::GetClientFd() const
 {
     return m_iClientFd;
 }
-int CClient::GetServerFd() const
-{
-    return m_iServerFd;
-}
-int CClient::GetBufSize() const
-{
-    return m_iBufSize;
-}
+
 struct sockaddr_in CClient::GetServerAddr() const 
 {
     return m_siServerAddr;
@@ -117,10 +114,11 @@ void CClient::ConnectionInit()
     /* Creating socket */
     m_iClientFd = Socket(AF_INET, SOCK_STREAM, 0);
         
-    /* Cunnect current socket to the server */
+    /* Connect current socket to the server */
     Connect(m_iClientFd, GetServerPtrAddr(), m_slSocketSize);
-    m_c_strBuffer = new char[BUF_SIZE];
+    char *m_c_strBuffer = new char[BUF_SIZE];
     cout << recv(m_iClientFd, m_c_strBuffer, BUF_SIZE, 0) << endl; 
+    /* Authorization initiated if server response with (Connected) */
     cout << "Connection confirmed and Server responses: " << m_c_strBuffer << endl;
     if(strcmp("Connected", m_c_strBuffer) == 0)
     {
@@ -134,6 +132,7 @@ void CClient::ClientCycle()
 {
     while(1)
     {
+        /* Asking user to choose mode */
         cout << "Sending or Receiving..." << endl;
         cout << "S/R: ";
         char chIsSend;
@@ -141,6 +140,7 @@ void CClient::ClientCycle()
         cout << endl;
         if(chIsSend == 'S' || chIsSend == 's')
         {
+            /* Asking user to chose message format */
             int DestID;
             char chIsWCHAR;
             cout << "Set Destination Client ID" << endl;
@@ -151,6 +151,7 @@ void CClient::ClientCycle()
             cout << endl;
             if(chIsWCHAR == 'Y' || chIsWCHAR == 'y')
             {
+                /* Initiate sending wchar message */
                 const wchar_t* wstrMsg;
                 std::wstring wstrConv;
                 cout << "Set message text: ";
@@ -161,6 +162,7 @@ void CClient::ClientCycle()
             }
             else if(chIsWCHAR == 'N' || chIsWCHAR == 'n')
             {
+                /* Initiate sending message */
                 const char* cstrMsg;
                 cout << "Set message text: ";
                 cin >> (char*)cstrMsg;
@@ -174,7 +176,8 @@ void CClient::ClientCycle()
         }
         else if(chIsSend == 'R' || chIsSend == 'r')
         {
-            /*TODO: Communication*/
+            /* In case of receiving mode */
+            /* Reading message from server and show it */
             RecvMessage();
         }
         else
@@ -242,12 +245,15 @@ void CClient::RecvMessage()
 
 int main()
 {
+    /* Creating Client object */
     CClient my_client;
+    /* Setting it`s ID (Must be unique) */
     cout << "Set ID: ";
     int Client_ID;
     cin >> Client_ID;
     cout << endl;
     my_client.SetID(Client_ID);
+    /* Inits comunication */
     my_client.ConnectionInit();
     my_client.ClientCycle();
     return 0;
