@@ -1,5 +1,11 @@
 #include "../Inc/Client.h"
 
+/** Client1_test.cpp 
+ * Test scenarios for first client in dialog
+ * 
+ * Describes automatic and common scenarios in main()
+ */
+
 using std::cin;
 using std::cout;
 using std::cerr;

@@ -1,5 +1,11 @@
 #include "../Inc/Client.h"
 
+/** Client2_test.cpp 
+ * Test scenarios for second client in dialog
+ * 
+ * Describes automatic and common scenarios in main()
+ */
+
 using std::cin;
 using std::cout;
 using std::cerr;
@@ -22,7 +28,7 @@ void CommonScenario()
     my_client.ConnectionInit();
     my_client.ClientCycle();
 }
-
+//Short dialog scenario
 void TestScenario_1()
 {
     CClient my_client(ID);
@@ -30,7 +36,7 @@ void TestScenario_1()
     my_client.RecvMessage();
     my_client.SendString(1, "Hello1");
 }
-
+//Long dialog scenario
 void TestScenario_2()
 {
     CClient my_client(ID);

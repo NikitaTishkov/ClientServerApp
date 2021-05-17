@@ -145,11 +145,20 @@ void CClient::ClientCycle()
             char chIsWCHAR;
             cout << "Set Destination Client ID" << endl;
             cin >> DestID;
-            cout << "Do you want to send WCHAR" << endl;
+            cout << "Do you want to send common string" << endl;
             cout << "Y/N (Yes/Np): ";
             cin >> chIsWCHAR;
             cout << endl;
             if(chIsWCHAR == 'Y' || chIsWCHAR == 'y')
+            {
+                /* Initiate sending message */
+                char cstrMsg[BUF_SIZE];
+                cout << "Set message text: ";
+                cin >> (char*)cstrMsg;
+                cout << endl;
+                SendString(DestID, cstrMsg);
+            }
+            else if(chIsWCHAR == 'N' || chIsWCHAR == 'n')
             {
                 /* Initiate sending wchar message */
                 const wchar_t* wstrMsg;
@@ -159,15 +168,6 @@ void CClient::ClientCycle()
                 cout << endl;
                 wstrMsg = wcsdup(wstrConv.c_str());
                 SendWString(DestID, wstrMsg);
-            }
-            else if(chIsWCHAR == 'N' || chIsWCHAR == 'n')
-            {
-                /* Initiate sending message */
-                char cstrMsg[BUF_SIZE];
-                cout << "Set message text: ";
-                cin >> (char*)cstrMsg;
-                cout << endl;
-                SendString(DestID, cstrMsg);
             }
             else
             {
