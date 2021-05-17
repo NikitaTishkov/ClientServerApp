@@ -1,2 +1,5 @@
 Src/server
 Src/client
+client_test2
+.gitignore
+client

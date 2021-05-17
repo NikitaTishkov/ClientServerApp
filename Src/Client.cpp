@@ -163,7 +163,7 @@ void CClient::ClientCycle()
             else if(chIsWCHAR == 'N' || chIsWCHAR == 'n')
             {
                 /* Initiate sending message */
-                const char* cstrMsg;
+                char cstrMsg[BUF_SIZE];
                 cout << "Set message text: ";
                 cin >> (char*)cstrMsg;
                 cout << endl;
@@ -233,28 +233,12 @@ void CClient::RecvMessage()
     if(bISWchar)
     {
         cout << recv(m_iClientFd, &wc_strBuffer, BUF_SIZE, 0) << endl;
-        std::wcout << L"#ID" << iSrcID << L" says" << wc_strBuffer << endl;
+        std::wcout << L"#ID" << iSrcID << L" says: " << wc_strBuffer << endl;
     }
     else
     {
         cout << recv(m_iClientFd, &c_strBuffer, BUF_SIZE, 0) << endl;
-        std::cout << "#ID" << iSrcID << " says" << c_strBuffer << endl;
+        std::cout << "#ID" << iSrcID << " says: " << c_strBuffer << endl;
     }
     
-}
-
-int main()
-{
-    /* Creating Client object */
-    CClient my_client;
-    /* Setting it`s ID (Must be unique) */
-    cout << "Set ID: ";
-    int Client_ID;
-    cin >> Client_ID;
-    cout << endl;
-    my_client.SetID(Client_ID);
-    /* Inits comunication */
-    my_client.ConnectionInit();
-    my_client.ClientCycle();
-    return 0;
 }
