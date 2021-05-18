@@ -1,4 +1,4 @@
-#include "../Inc/Client.h"
+#include "../Inc/Client_cpp.h"
 
 /** Client.cpp 
  * Source code of clients app

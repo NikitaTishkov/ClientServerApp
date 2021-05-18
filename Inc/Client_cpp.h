@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <wchar.h>
-#include "ErrWrap.h"
+#include "ErrWrap_cpp.h"
 
 #define IP "127.0.0.1"
 #define BUF_SIZE 1024

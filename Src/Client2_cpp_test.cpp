@@ -1,7 +1,7 @@
-#include "../Inc/Client.h"
+#include "../Inc/Client_cpp.h"
 
-/** Client1_test.cpp 
- * Test scenarios for first client in dialog
+/** Client2_test.cpp 
+ * Test scenarios for second client in dialog
  * 
  * Describes automatic and common scenarios in main()
  */
@@ -11,7 +11,8 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-#define ID 1
+#define TEST_NO 2
+#define ID 2
 
 void CommonScenario()
 {
@@ -27,33 +28,30 @@ void CommonScenario()
     my_client.ConnectionInit();
     my_client.ClientCycle();
 }
-
-//Short dialog
+//Short dialog scenario
 void TestScenario_1()
 {
-    CClient my_client(1);
+    CClient my_client(ID);
     my_client.ConnectionInit();
-    my_client.SendString(2, "Hello2");
     my_client.RecvMessage();
+    my_client.SendString(1, "Hello1");
 }
-
-//Long dialog
+//Long dialog scenario
 void TestScenario_2()
 {
-    CClient my_client(1);
+    CClient my_client(ID);
     my_client.ConnectionInit();
-    my_client.SendString(2, "Hello2");
     my_client.RecvMessage();
-    my_client.SendString(2, "What`s_up");
+    my_client.SendString(1, "Hello1");
     my_client.RecvMessage();
-    my_client.SendString(2, "Bye2");
+    my_client.SendString(1, "Fine!");
     my_client.RecvMessage();
+    my_client.SendString(1, "Bye1");
 }
 
-int main(int argc, char **argv)
+int main()
 {
-    int i = atoi(argv[1]);
-    switch(i)
+    switch(TEST_NO)
     {
         case 0:
             CommonScenario();

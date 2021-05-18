@@ -1,4 +1,4 @@
-#include "../Inc/ErrWrap.h"
+#include "../Inc/ErrWrap_cpp.h"
 
 using std::cout;
 using std::cerr;

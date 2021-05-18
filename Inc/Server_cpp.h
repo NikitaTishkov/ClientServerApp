@@ -17,7 +17,7 @@
 #include <map>
 #include <mutex>
 
-#include "ErrWrap.h"
+#include "ErrWrap_cpp.h"
 
 #define IP "127.0.0.1"
 #define BUF_SIZE 1024
@@ -32,7 +32,6 @@ class CServer
 private:
     /* Server File descriptor */
     int m_iServerFd;
-    /* Sockets array for knowing to who we communicate */
     
     /* Mutex for defencing Connections table */
     pthread_mutex_t m_ConnectionsTableMutex;
